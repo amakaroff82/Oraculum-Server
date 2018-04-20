@@ -1,0 +1,31 @@
+{
+  "name": "coresearch",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "node dest/index.js",
+    "build": "babel -d dest/ src/",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "omakarov",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-cli": "^6.18.0",
+    "babel-core": "^6.20.0",
+    "babel-plugin-syntax-async-functions": "^6.13.0",
+    "babel-plugin-transform-regenerator": "^6.20.0",
+    "babel-preset-es2015": "^6.18.0"
+  },
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "cors": "^2.8.1",
+    "express": "^4.16.3",
+    "graphql": "^0.8.2",
+    "graphql-server-express": "^0.4.3",
+    "graphql-tools": "^0.8.3",
+    "mongodb": "^2.2.15",
+    "websocket": "^1.0.25",
+    "ws": "^5.1.0"
+  }
+}
