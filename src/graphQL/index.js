@@ -50,6 +50,9 @@ function startGraphQL(app, db){
         Comment: {
             page: async ({pageId}) => {
                 return prepare(await Pages.findOne(ObjectId(pageId)));
+            },
+            author: async ({authorId}) => {
+                return prepare(await Users.findOne({id: authorId}));
             }
         },
         Mutation: {
@@ -72,7 +75,11 @@ function startGraphQL(app, db){
                     return prepare(await Pages.findOne({_id: res.insertedIds[0]}));
                 }
                 else{
-                    return page;
+                    const res = await Pages.update({_id: page._id}, {
+                        sourceTags: args.input.sourceTags,
+                        content: args.input.content
+                    });
+                    return prepare(await Pages.findOne({url: args.input.url}));
                 }
             },
             createComment: async (root, args) => {

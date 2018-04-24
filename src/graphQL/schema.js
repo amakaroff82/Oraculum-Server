@@ -12,13 +12,15 @@ const typeDefs = [`
   }
 
   input PageInput {
-    authorId: String
-    url: String
     title: String
-    content: String  
+    url: String
+    content: String
+    sourceTags: [String] 
+    authorId: String
   }
   
   input CommentInput {
+    authorId: String
     pageId: String
     content: String
   }
@@ -40,23 +42,25 @@ const typeDefs = [`
     verified_email: String
     picture: String
     hd: String
-  }
-  
+  }  
 
   type Page {
     _id: String
     title: String
-    content: String
     url: String
+    content: String
+    sourceTags: [String]
+    comments: [Comment]
     authorId: String
     author: User
-    comments: [Comment]
   }
 
   type Comment {
     _id: String
     pageId: String
+    authorId: String
     content: String
+    author: User
     page: Page
   }
 
