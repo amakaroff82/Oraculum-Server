@@ -15,7 +15,6 @@ export const start = (app) => {
       startGraphQL(app, db);
     });
   } catch (e) {
-    console.log(e);
+    console.log('Error: ', e);
   }
-
 }

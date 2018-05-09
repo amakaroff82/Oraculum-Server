@@ -4,8 +4,8 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "start": "node dest/index.js",
-    "build": "babel -d dest/ src/",
+    "start": "set NODE_ENV=development&&node dest/index.js",
+    "build": "babel -d dest/ src/ --source-maps",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "omakarov",

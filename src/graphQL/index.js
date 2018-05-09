@@ -9,102 +9,124 @@ const URL = 'http://localhost'
 const PORT = 8080
 
 const prepare = (o) => {
-    if(o && o._id && typeof(o._id) === 'number') {
-        o._id = o._id.toString();
-    }
-    return o;
+  if (o && o._id && typeof(o._id) === 'number') {
+    o._id = o._id.toString();
+  }
+  return o;
 }
 
-function startGraphQL(app, db){
-    const Users = db.collection('users');
-    const Pages = db.collection('pages');
-    const Comments = db.collection('comments');
+export function startGraphQL(app, db) {
+  const Users = db.collection('users');
+  const Pages = db.collection('pages');
+  const Comments = db.collection('comments');
 
-    const resolvers = {
-        Query: {
-            user: async (root, {id}) => {
-                return prepare(await Users.findOne({id}));
-            },
-            page: async (root, {_id}) => {
-                return prepare(await Pages.findOne(ObjectId(_id)));
-            },
-            pages: async (root, {data}) => {
-                return (await Pages.find({
-                    url:{
-                        $in: data
-                    }
-                }).toArray()).map(prepare);
-            },
-            comment: async (root, {_id}) => {
-                return prepare(await Comments.findOne(ObjectId(_id)));
+  const resolvers = {
+    Query: {
+      user: async (root, {id}) => {
+        return prepare(await Users.findOne({id}));
+      },
+      page: async (root, {_id}) => {
+        return prepare(await Pages.findOne(ObjectId(_id)));
+      },
+      pages: async (root, {data}) => {
+        return (await Pages.find({
+          url: {
+            $in: data
+          }
+        }).toArray()).map(prepare);
+      },
+      pageByUrl: async (root, {data}) => {
+        return (await Pages.findOne({
+          url: data
+        }));
+      },
+      comment: async (root, {_id}) => {
+        return prepare(await Comments.findOne(ObjectId(_id)));
+      },
+      getMyPages: async (root, {data}) => {
+        return (await Pages.find({
+          authorId: data
+        }).toArray()).map(prepare);
+      },
+      comment: async (root, {_id}) => {
+        return prepare(await Comments.findOne(ObjectId(_id)));
+      }
+    },
+    Page: {
+      comments: async ({_id}) => {
+        let result = (await Comments.find({
+          pageId: _id.toString()
+        }).toArray()).map(prepare);
+
+        console.log(result);
+        return result;
+      },
+      author: async ({authorId}) => {
+        return prepare(await Users.findOne({id: authorId}));
+      }
+    },
+    Comment: {
+      page: async ({pageId}) => {
+        return prepare(await Pages.findOne(ObjectId(pageId)));
+      },
+      author: async ({authorId}) => {
+        return prepare(await Users.findOne({id: authorId}));
+      }
+    },
+    Mutation: {
+      createOrUpdateUser: async (root, args) => {
+        let user = prepare(await Users.findOne({id: args.input.id}))
+        if (!user) {
+          const result = await Users.insert(args.input);
+          return prepare(await Users.findOne({_id: result.insertedIds[0]}));
+        }
+        else {
+          return user;
+        }
+      },
+      createOrUpdatePage: async (root, args, context, info) => {
+        let page = prepare(await Pages.findOne({url: args.input.url}))
+        if (!page) {
+          const result = await Pages.insert(args.input);
+          return prepare(await Pages.findOne({_id: result.insertedIds[0]}));
+        }
+        else {
+          const res = await Pages.update({url: page.url}, {
+            $set: {
+              sourceTags: args.input.sourceTags,
+              content: args.input.content
             }
-        },
-        Page: {
-            comments: async ({_id}) => {
-                return (await Comments.find({pageId: _id}).toArray()).map(prepare);
-            },
-            author: async ({authorId}) => {
-                return prepare(await Users.findOne({id: authorId}));
-            }
-        },
-        Comment: {
-            page: async ({pageId}) => {
-                return prepare(await Pages.findOne(ObjectId(pageId)));
-            },
-            author: async ({authorId}) => {
-                return prepare(await Users.findOne({id: authorId}));
-            }
-        },
-        Mutation: {
-            createOrUpdateUser: async (root, args) => {
-                let user = prepare(await Users.findOne({id: args.input.id}))
-                if(!user) {
-                    const res = await Users.insert(args.input);
-                    console.log(res);
-                    return prepare(await Users.findOne({_id: res.insertedIds[0]}));
-                }
-                else{
-                    return user;
-                }
-            },
-            createOrUpdatePage: async (root, args, context, info) => {
-                let page = prepare(await Pages.findOne({url: args.input.url}))
-                if(!page) {
-                    const res = await Pages.insert(args.input);
-                    console.log(res);
-                    return prepare(await Pages.findOne({_id: res.insertedIds[0]}));
-                }
-                else{
-                    const res = await Pages.update({_id: page._id}, {
-                        sourceTags: args.input.sourceTags,
-                        content: args.input.content
-                    });
-                    return prepare(await Pages.findOne({url: args.input.url}));
-                }
-            },
-            createComment: async (root, args) => {
-                const res = await Comments.insert(args.input);
-                return prepare(await Comments.findOne({_id: res.insertedIds[0]}));
-            }
-        },
-    }
+          });
+          return prepare(await Pages.findOne({url: args.input.url}));
+        }
+      },
+      createComment: async (root, args) => {
+        const result = await Comments.insert(args.input);
+        return prepare(await Comments.findOne({_id: result.insertedIds[0]}));
+      }
+    },
+  }
 
-    const schema = makeExecutableSchema({
-        typeDefs,
-        resolvers
-    });
+  const schema = makeExecutableSchema({
+    typeDefs,
+    resolvers
+  });
 
-    app.use('/oraculum', bodyParser.json(), graphqlExpress({schema}));
+  const apiPath = '/oraculum';
+  const homePath = '/graphiql';
 
-    const homePath = '/graphiql';
+  // api url
+  app.use(apiPath, bodyParser.json(), graphqlExpress({
+    schema: schema
+  }));
 
-    app.use(homePath, graphiqlExpress({
-        endpointURL: '/oraculum'
-    }))
+  // admin panel url
+  app.use(homePath, graphiqlExpress({
+    endpointURL: apiPath
+  }))
 
-    app.listen(PORT, () => {
-        console.log(`Visit ${URL}:${PORT}${homePath}`);
-    })
+  app.listen(PORT, () => {
+    console.log(`Visit ${URL}:${PORT}${homePath}`);
+  })
 }
 
-module.exports.startGraphQL = startGraphQL;

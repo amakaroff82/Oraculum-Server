@@ -28,7 +28,9 @@ const typeDefs = [`
   type Query {
     user(id: String): User
     page(_id: String): Page
+    pageByUrl(data: String): Page
     pages(data: [String]): [Page]
+    getMyPages(data: String): [Page]
     comment(_id: String): Comment
   }
   
