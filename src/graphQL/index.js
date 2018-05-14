@@ -3,10 +3,8 @@ import {graphiqlExpress, graphqlExpress} from 'graphql-server-express/dist/index
 import {typeDefs} from './schema';
 import {makeExecutableSchema} from 'graphql-tools/dist/index';
 import bodyParser from 'body-parser';
-import {ObjectId} from 'mongodb'
-
-const URL = 'http://localhost'
-const PORT = 8080
+import {ObjectId} from 'mongodb';
+import config from '../config';
 
 const prepare = (o) => {
   if (o && o._id && typeof(o._id) === 'number') {
@@ -123,10 +121,10 @@ export function startGraphQL(app, db) {
   // admin panel url
   app.use(homePath, graphiqlExpress({
     endpointURL: apiPath
-  }))
+  }));
 
-  app.listen(PORT, () => {
-    console.log(`Visit ${URL}:${PORT}${homePath}`);
+  app.listen(config.app.port, () => {
+    console.log(`Visit ${config.app.url}:${config.app.port}${homePath}`);
   })
 }
 
