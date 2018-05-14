@@ -4,6 +4,7 @@ import {start} from './graphQLMongo'
 import {startSockets} from './wsserver'
 import cors from "cors";
 import express from "express";
+import dbJobber from './db-jobber/index';
 
 const app = express();
 
@@ -16,4 +17,5 @@ if(process.env.NODE_ENV === 'development' ){
 }
 
 start(app);
+dbJobber.start();
 //startSockets();
