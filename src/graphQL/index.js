@@ -89,12 +89,21 @@ export function startGraphQL(app, db) {
           return prepare(await Pages.findOne({_id: result.insertedIds[0]}));
         }
         else {
-          const res = await Pages.update({url: page.url}, {
-            $set: {
+          const pageProps = typeof args.input.tags === 'string' ?
+            {
+              tags: args.input.tags,
               sourceTags: args.input.sourceTags,
               content: args.input.content
-            }
+            } :
+            {
+              sourceTags: args.input.sourceTags,
+              content: args.input.content
+            };
+
+          await Pages.update({url: page.url}, {
+            $set: pageProps
           });
+
           return prepare(await Pages.findOne({url: args.input.url}));
         }
       },
