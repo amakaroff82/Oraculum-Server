@@ -16,6 +16,7 @@ const typeDefs = [`
     url: String
     content: String
     sourceTags: [String] 
+    tags: String
     authorId: String
   }
   
@@ -52,6 +53,7 @@ const typeDefs = [`
     url: String
     content: String
     parsedContent: String
+    tags: String
     sourceTags: [String]
     comments: [Comment]
     authorId: String
