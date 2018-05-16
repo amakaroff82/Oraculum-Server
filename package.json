@@ -6,6 +6,7 @@
   "scripts": {
     "start": "set NODE_ENV=development&&node dest/index.js",
     "build": "babel -d dest/ src/ --source-maps",
+    "build:prod": "babel -d dest/ src/",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "omakarov",
