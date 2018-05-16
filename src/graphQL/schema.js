@@ -17,6 +17,7 @@ const typeDefs = [`
     content: String
     sourceTags: [String] 
     tags: String
+    selection: String
     authorId: String
   }
   
@@ -54,6 +55,7 @@ const typeDefs = [`
     content: String
     parsedContent: String
     tags: String
+    selection: String
     sourceTags: [String]
     comments: [Comment]
     authorId: String
