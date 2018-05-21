@@ -33,6 +33,7 @@ const typeDefs = [`
     pageByUrl(data: String): Page
     pages(data: [String]): [Page]
     getMyPages(data: String): [Page]
+    getAllPages: [Page]
     comment(_id: String): Comment
   }
   

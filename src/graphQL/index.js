@@ -46,6 +46,9 @@ export function startGraphQL(app, db) {
           authorId: data
         }).toArray()).map(prepare);
       },
+      getAllPages: async (root, {data}) => {
+        return (await Pages.find().toArray()).map(prepare);
+      },
       comment: async (root, {_id}) => {
         return prepare(await Comments.findOne(ObjectId(_id)));
       }
