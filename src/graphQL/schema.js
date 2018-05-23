@@ -1,7 +1,7 @@
 const typeDefs = [`
 
   input UserInput {
-    id: String
+    googleId: String
     name: String
     given_name: String 
     family_name: String     
@@ -28,7 +28,8 @@ const typeDefs = [`
   }
 
   type Query {
-    user(id: String): User
+    user(_id: String): User
+    userByGoogleId(googleId: String): User
     page(_id: String): Page
     pageByUrl(data: String): Page
     pages(data: [String]): [Page]
@@ -39,7 +40,7 @@ const typeDefs = [`
   
   type User {
     _id: String
-    id: String
+    googleId: String
     name: String
     given_name: String 
     family_name: String 

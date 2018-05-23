@@ -20,8 +20,11 @@ export function startGraphQL(app, db) {
 
   const resolvers = {
     Query: {
-      user: async (root, {id}) => {
-        return prepare(await Users.findOne({id}));
+      user: async (root, {_id}) => {
+        return prepare(await Users.findOne(ObjectId(_id)));
+      },
+      userByGoogleId: async (root, {googleId}) => {
+        return prepare(await Users.findOne({googleId}));
       },
       page: async (root, {_id}) => {
         return prepare(await Pages.findOne(ObjectId(_id)));
@@ -48,9 +51,6 @@ export function startGraphQL(app, db) {
       },
       getAllPages: async (root, {data}) => {
         return (await Pages.find().toArray()).map(prepare);
-      },
-      comment: async (root, {_id}) => {
-        return prepare(await Comments.findOne(ObjectId(_id)));
       }
     },
     Page: {
@@ -63,7 +63,7 @@ export function startGraphQL(app, db) {
         return result;
       },
       author: async ({authorId}) => {
-        return prepare(await Users.findOne({id: authorId}));
+        return prepare(await Users.findOne(ObjectId(authorId)));
       }
     },
     Comment: {
@@ -71,12 +71,12 @@ export function startGraphQL(app, db) {
         return prepare(await Pages.findOne(ObjectId(pageId)));
       },
       author: async ({authorId}) => {
-        return prepare(await Users.findOne({id: authorId}));
+        return prepare(await Users.findOne(ObjectId(authorId)));
       }
     },
     Mutation: {
       createOrUpdateUser: async (root, args) => {
-        let user = prepare(await Users.findOne({id: args.input.id}))
+        let user = prepare(await Users.findOne({email: args.input.email}))
         if (!user) {
           const result = await Users.insert(args.input);
           return prepare(await Users.findOne({_id: result.insertedIds[0]}));
