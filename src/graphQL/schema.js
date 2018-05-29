@@ -37,12 +37,6 @@ const typeDefs = [`
     pageId: String
     content: String
   }
-  
-  type AuthOutput {
-    auth: Boolean
-    token: String
-    user: User
-  }
 
   type Query {
     user(_id: String): User
@@ -91,11 +85,18 @@ const typeDefs = [`
     author: User
     page: Page
   }
+  
+  type AuthData {
+    _id: String
+    auth: Boolean
+    token: String
+    user: User
+  }
 
   type Mutation {
     createOrUpdateUser(input: UserInput): User
-    registerUser(input: RegistrationInput): AuthOutput
-    loginUser(input: LoginInput): AuthOutput
+    registerUser(input: RegistrationInput): AuthData
+    loginUser(input: LoginInput): AuthData
     createOrUpdatePage(input: PageInput): Page
     createComment(input: CommentInput): Comment
   }
