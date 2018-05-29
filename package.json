@@ -23,10 +23,12 @@
     "axios": "^0.18.0",
     "body-parser": "^1.15.2",
     "cors": "^2.8.1",
+    "crypto": "^1.0.1",
     "express": "^4.16.3",
     "graphql": "^0.8.2",
     "graphql-server-express": "^0.4.3",
     "graphql-tools": "^0.8.3",
+    "jsonwebtoken": "^8.2.1",
     "mongodb": "^2.2.15",
     "websocket": "^1.0.25",
     "ws": "^5.1.0"

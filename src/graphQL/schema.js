@@ -10,6 +10,17 @@ const typeDefs = [`
     picture: String
     hd: String
   }
+  
+  input RegistrationInput {
+    name: String     
+    email: String
+    password: String
+  }
+  
+  input LoginInput {
+    email: String
+    password: String
+  }
 
   input PageInput {
     title: String
@@ -25,6 +36,12 @@ const typeDefs = [`
     authorId: String
     pageId: String
     content: String
+  }
+  
+  type AuthOutput {
+    auth: Boolean
+    token: String
+    user: User
   }
 
   type Query {
@@ -48,6 +65,8 @@ const typeDefs = [`
     verified_email: String
     picture: String
     hd: String
+    passwordHash: String
+    salt: String
   }  
 
   type Page {
@@ -73,8 +92,10 @@ const typeDefs = [`
     page: Page
   }
 
-  type Mutation { 
+  type Mutation {
     createOrUpdateUser(input: UserInput): User
+    registerUser(input: RegistrationInput): AuthOutput
+    loginUser(input: LoginInput): AuthOutput
     createOrUpdatePage(input: PageInput): Page
     createComment(input: CommentInput): Comment
   }

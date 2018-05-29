@@ -5,6 +5,7 @@ import {makeExecutableSchema} from 'graphql-tools/dist/index';
 import bodyParser from 'body-parser';
 import {ObjectId} from 'mongodb';
 import config from '../config';
+import {generateToken, isPasswordValid, saltHashPassword} from '../auth-utils';
 
 const prepare = (o) => {
   if (o && o._id && typeof(o._id) === 'number') {
@@ -84,6 +85,58 @@ export function startGraphQL(app, db) {
         else {
           return user;
         }
+      },
+      //todo: add email and password validation
+      registerUser: async (root, args) => {
+        let user = prepare(await Users.findOne({email: args.input.email}));
+        if (!user) {
+          let {salt, passwordHash} = saltHashPassword(args.input.password);
+
+          const result = await Users.insert({
+            email: args.input.email,
+            name: args.input.name,
+            salt: salt,
+            passwordHash: passwordHash
+          });
+          const token = generateToken(result.insertedIds[0]);
+          const newUser = prepare(await Users.findOne({_id: result.insertedIds[0]}));
+
+          return {
+            auth: true,
+            token: token,
+            user: newUser
+          }
+        } else {
+          //error
+          return {
+            auth: false,
+            token: null,
+            user: null
+          };
+        }
+      },
+      loginUser: async (root, args) => {
+        let user = prepare(await Users.findOne({email: args.input.email}));
+        if (user) {
+
+          if (isPasswordValid(args.input.password, user.salt, user.passwordHash)) {
+
+            const token = generateToken(user._id);
+
+            return {
+              auth: true,
+              token: token,
+              user: user
+            }
+          }
+        }
+
+        //error
+        return {
+          auth: false,
+          token: null,
+          user: null
+        };
       },
       createOrUpdatePage: async (root, args, context, info) => {
         let page = prepare(await Pages.findOne({url: args.input.url}))
