@@ -30,6 +30,7 @@
     "graphql-tools": "^0.8.3",
     "jsonwebtoken": "^8.2.1",
     "mongodb": "^2.2.15",
+    "validator": "^10.2.0",
     "websocket": "^1.0.25",
     "ws": "^5.1.0"
   }

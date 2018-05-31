@@ -1,11 +1,13 @@
-import cors from 'cors';
+import {ObjectId} from 'mongodb';
+import bodyParser from 'body-parser';
+import validator from 'validator';
+
 import {graphiqlExpress, graphqlExpress} from 'graphql-server-express/dist/index';
 import {typeDefs} from './schema';
 import {makeExecutableSchema} from 'graphql-tools/dist/index';
-import bodyParser from 'body-parser';
-import {ObjectId} from 'mongodb';
 import config from '../config';
 import {generateToken, isPasswordValid, saltHashPassword} from '../auth-utils';
+import ValidationError from './validation-error';
 
 const prepare = (o) => {
   if (o && o._id && typeof(o._id) === 'number') {
@@ -86,56 +88,77 @@ export function startGraphQL(app, db) {
           return user;
         }
       },
-      //todo: add email and password validation
       registerUser: async (root, args) => {
-        let user = prepare(await Users.findOne({email: args.input.email}));
-        if (!user) {
-          let {salt, passwordHash} = saltHashPassword(args.input.password);
 
-          const result = await Users.insert({
-            email: args.input.email,
-            name: args.input.name,
-            salt: salt,
-            passwordHash: passwordHash
-          });
-          const token = generateToken(result.insertedIds[0]);
-          const newUser = prepare(await Users.findOne({_id: result.insertedIds[0]}));
+        let errors = [];
 
-          return {
-            auth: true,
-            token: token,
-            user: newUser
-          }
-        } else {
-          //error
-          return {
-            auth: false,
-            token: null,
-            user: null
-          };
+        if (validator.isEmpty(args.input.name)) {
+          errors.push({ key: 'name', message: 'The name must not be empty.' });
         }
-      },
-      loginUser: async (root, args) => {
+
+        if (validator.isEmpty(args.input.email)) {
+          errors.push({ key: 'email', message: 'The email address must not be empty.' });
+        }
+
+        if (validator.isEmpty(args.input.password)) {
+          errors.push({ key: 'password', message: 'The password filed must not be empty.' });
+        } else if (!validator.isLength(args.input.password, { min: 6 })) {
+          errors.push({ key: 'password', message: 'The password must be at a minimum 6 characters long.' });
+        }
+
         let user = prepare(await Users.findOne({email: args.input.email}));
         if (user) {
-
-          if (isPasswordValid(args.input.password, user.salt, user.passwordHash)) {
-
-            const token = generateToken(user._id);
-
-            return {
-              auth: true,
-              token: token,
-              user: user
-            }
-          }
+          errors.push({ key: 'email', message: 'A user with this email address already exists.' });
         }
 
-        //error
+        if (errors.length) throw new ValidationError(errors);
+
+        let {salt, passwordHash} = saltHashPassword(args.input.password);
+
+        const result = await Users.insert({
+          email: args.input.email,
+          name: args.input.name,
+          salt: salt,
+          passwordHash: passwordHash
+        });
+        const token = generateToken(result.insertedIds[0]);
+        const newUser = prepare(await Users.findOne({_id: result.insertedIds[0]}));
+
         return {
-          auth: false,
-          token: null,
-          user: null
+          token: token,
+          user: newUser
+        };
+      },
+      loginUser: async (root, args) => {
+
+        let errors = [];
+
+        if (validator.isEmpty(args.input.email)) {
+          errors.push({ key: 'email', message: 'The email address must not be empty.' });
+        }
+
+        if (validator.isEmpty(args.input.password)) {
+          errors.push({ key: 'password', message: 'The password filed must not be empty.' });
+        }
+
+        if (errors.length) throw new ValidationError(errors);
+
+        let user = prepare(await Users.findOne({email: args.input.email}));
+        if (!user) {
+          errors.push({ key: 'email', message: 'A user with this email address is absent.' });
+          throw new ValidationError(errors);
+        }
+
+        if (!isPasswordValid(args.input.password, user.salt, user.passwordHash)) {
+          errors.push({ key: 'password', message: 'Invalid password' });
+          throw new ValidationError(errors);
+        }
+
+        const token = generateToken(user._id);
+
+        return {
+          token: token,
+          user: user
         };
       },
       createOrUpdatePage: async (root, args, context, info) => {
@@ -171,7 +194,13 @@ export function startGraphQL(app, db) {
 
   // api url
   app.use(apiPath, bodyParser.json(), graphqlExpress({
-    schema: schema
+    schema: schema,
+    formatError: error => ({
+      message: error.message,
+      state: error.originalError && error.originalError.state,
+      locations: error.locations,
+      path: error.path,
+    })
   }));
 
   // admin panel url

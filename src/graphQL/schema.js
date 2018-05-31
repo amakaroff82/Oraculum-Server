@@ -12,14 +12,14 @@ const typeDefs = [`
   }
   
   input RegistrationInput {
-    name: String     
-    email: String
-    password: String
+    name: String!
+    email: String!
+    password: String!
   }
   
   input LoginInput {
-    email: String
-    password: String
+    email: String!
+    password: String!
   }
 
   input PageInput {
@@ -88,7 +88,6 @@ const typeDefs = [`
   
   type AuthData {
     _id: String
-    auth: Boolean
     token: String
     user: User
   }
