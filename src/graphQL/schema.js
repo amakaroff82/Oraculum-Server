@@ -1,7 +1,7 @@
 const typeDefs = [`
 
   input UserInput {
-    id: String
+    googleId: String
     name: String
     given_name: String 
     family_name: String     
@@ -9,6 +9,17 @@ const typeDefs = [`
     verified_email: String
     picture: String
     hd: String
+  }
+  
+  input RegistrationInput {
+    name: String!
+    email: String!
+    password: String!
+  }
+  
+  input LoginInput {
+    email: String!
+    password: String!
   }
 
   input PageInput {
@@ -28,7 +39,8 @@ const typeDefs = [`
   }
 
   type Query {
-    user(id: String): User
+    user(_id: String): User
+    userByGoogleId(googleId: String): User
     page(_id: String): Page
     pageByUrl(data: String): Page
     pages(data: [String]): [Page]
@@ -39,7 +51,7 @@ const typeDefs = [`
   
   type User {
     _id: String
-    id: String
+    googleId: String
     name: String
     given_name: String 
     family_name: String 
@@ -47,6 +59,8 @@ const typeDefs = [`
     verified_email: String
     picture: String
     hd: String
+    passwordHash: String
+    salt: String
   }  
 
   type Page {
@@ -71,9 +85,17 @@ const typeDefs = [`
     author: User
     page: Page
   }
+  
+  type AuthData {
+    _id: String
+    token: String
+    user: User
+  }
 
-  type Mutation { 
+  type Mutation {
     createOrUpdateUser(input: UserInput): User
+    registerUser(input: RegistrationInput): AuthData
+    loginUser(input: LoginInput): AuthData
     createOrUpdatePage(input: PageInput): Page
     createComment(input: CommentInput): Comment
   }

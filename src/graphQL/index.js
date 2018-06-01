@@ -1,10 +1,13 @@
-import cors from 'cors';
+import {ObjectId} from 'mongodb';
+import bodyParser from 'body-parser';
+import validator from 'validator';
+
 import {graphiqlExpress, graphqlExpress} from 'graphql-server-express/dist/index';
 import {typeDefs} from './schema';
 import {makeExecutableSchema} from 'graphql-tools/dist/index';
-import bodyParser from 'body-parser';
-import {ObjectId} from 'mongodb';
 import config from '../config';
+import {generateToken, isPasswordValid, saltHashPassword} from '../auth-utils';
+import ValidationError from './validation-error';
 
 const prepare = (o) => {
   if (o && o._id && typeof(o._id) === 'number') {
@@ -20,8 +23,11 @@ export function startGraphQL(app, db) {
 
   const resolvers = {
     Query: {
-      user: async (root, {id}) => {
-        return prepare(await Users.findOne({id}));
+      user: async (root, {_id}) => {
+        return prepare(await Users.findOne(ObjectId(_id)));
+      },
+      userByGoogleId: async (root, {googleId}) => {
+        return prepare(await Users.findOne({googleId}));
       },
       page: async (root, {_id}) => {
         return prepare(await Pages.findOne(ObjectId(_id)));
@@ -48,9 +54,6 @@ export function startGraphQL(app, db) {
       },
       getAllPages: async (root, {data}) => {
         return (await Pages.find().toArray()).map(prepare);
-      },
-      comment: async (root, {_id}) => {
-        return prepare(await Comments.findOne(ObjectId(_id)));
       }
     },
     Page: {
@@ -63,7 +66,7 @@ export function startGraphQL(app, db) {
         return result;
       },
       author: async ({authorId}) => {
-        return prepare(await Users.findOne({id: authorId}));
+        return prepare(await Users.findOne(ObjectId(authorId)));
       }
     },
     Comment: {
@@ -71,12 +74,12 @@ export function startGraphQL(app, db) {
         return prepare(await Pages.findOne(ObjectId(pageId)));
       },
       author: async ({authorId}) => {
-        return prepare(await Users.findOne({id: authorId}));
+        return prepare(await Users.findOne(ObjectId(authorId)));
       }
     },
     Mutation: {
       createOrUpdateUser: async (root, args) => {
-        let user = prepare(await Users.findOne({id: args.input.id}))
+        let user = prepare(await Users.findOne({email: args.input.email}))
         if (!user) {
           const result = await Users.insert(args.input);
           return prepare(await Users.findOne({_id: result.insertedIds[0]}));
@@ -84,6 +87,79 @@ export function startGraphQL(app, db) {
         else {
           return user;
         }
+      },
+      registerUser: async (root, args) => {
+
+        let errors = [];
+
+        if (validator.isEmpty(args.input.name)) {
+          errors.push({ key: 'name', message: 'The name must not be empty.' });
+        }
+
+        if (validator.isEmpty(args.input.email)) {
+          errors.push({ key: 'email', message: 'The email address must not be empty.' });
+        }
+
+        if (validator.isEmpty(args.input.password)) {
+          errors.push({ key: 'password', message: 'The password filed must not be empty.' });
+        } else if (!validator.isLength(args.input.password, { min: 6 })) {
+          errors.push({ key: 'password', message: 'The password must be at a minimum 6 characters long.' });
+        }
+
+        let user = prepare(await Users.findOne({email: args.input.email}));
+        if (user) {
+          errors.push({ key: 'email', message: 'A user with this email address already exists.' });
+        }
+
+        if (errors.length) throw new ValidationError(errors);
+
+        let {salt, passwordHash} = saltHashPassword(args.input.password);
+
+        const result = await Users.insert({
+          email: args.input.email,
+          name: args.input.name,
+          salt: salt,
+          passwordHash: passwordHash
+        });
+        const token = generateToken(result.insertedIds[0]);
+        const newUser = prepare(await Users.findOne({_id: result.insertedIds[0]}));
+
+        return {
+          token: token,
+          user: newUser
+        };
+      },
+      loginUser: async (root, args) => {
+
+        let errors = [];
+
+        if (validator.isEmpty(args.input.email)) {
+          errors.push({ key: 'email', message: 'The email address must not be empty.' });
+        }
+
+        if (validator.isEmpty(args.input.password)) {
+          errors.push({ key: 'password', message: 'The password filed must not be empty.' });
+        }
+
+        if (errors.length) throw new ValidationError(errors);
+
+        let user = prepare(await Users.findOne({email: args.input.email}));
+        if (!user) {
+          errors.push({ key: 'email', message: 'A user with this email address is absent.' });
+          throw new ValidationError(errors);
+        }
+
+        if (!isPasswordValid(args.input.password, user.salt, user.passwordHash)) {
+          errors.push({ key: 'password', message: 'Invalid password' });
+          throw new ValidationError(errors);
+        }
+
+        const token = generateToken(user._id);
+
+        return {
+          token: token,
+          user: user
+        };
       },
       createOrUpdatePage: async (root, args, context, info) => {
         let page = prepare(await Pages.findOne({url: args.input.url}))
@@ -118,7 +194,13 @@ export function startGraphQL(app, db) {
 
   // api url
   app.use(apiPath, bodyParser.json(), graphqlExpress({
-    schema: schema
+    schema: schema,
+    formatError: error => ({
+      message: error.message,
+      state: error.originalError && error.originalError.state,
+      locations: error.locations,
+      path: error.path,
+    })
   }));
 
   // admin panel url
