@@ -11,6 +11,12 @@ const typeDefs = [`
     hd: String
   }
   
+  input UpdateUserInput {
+    _id: String
+    name: String
+    email: String
+  }
+  
   input RegistrationInput {
     name: String!
     email: String!
@@ -40,7 +46,7 @@ const typeDefs = [`
 
   type Query {
     user(_id: String): User
-    userByGoogleId(googleId: String): User
+    getUserByGoogleId(data: String): User
     page(_id: String): Page
     pageByUrl(data: String): Page
     pages(data: [String]): [Page]
@@ -93,7 +99,8 @@ const typeDefs = [`
   }
 
   type Mutation {
-    createOrUpdateUser(input: UserInput): User
+    registerGoogleUser(input: UserInput): User
+    updateUser(input: UpdateUserInput): User
     registerUser(input: RegistrationInput): AuthData
     loginUser(input: LoginInput): AuthData
     createOrUpdatePage(input: PageInput): Page
