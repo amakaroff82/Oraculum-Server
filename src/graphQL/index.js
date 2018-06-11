@@ -26,8 +26,8 @@ export function startGraphQL(app, db) {
       user: async (root, {_id}) => {
         return prepare(await Users.findOne(ObjectId(_id)));
       },
-      userByGoogleId: async (root, {googleId}) => {
-        return prepare(await Users.findOne({googleId}));
+      getUserByGoogleId: async (root, {data}) => {
+        return prepare(await Users.findOne({googleId: data}));
       },
       page: async (root, {_id}) => {
         return prepare(await Pages.findOne(ObjectId(_id)));
@@ -78,15 +78,27 @@ export function startGraphQL(app, db) {
       }
     },
     Mutation: {
-      createOrUpdateUser: async (root, args) => {
-        let user = prepare(await Users.findOne({email: args.input.email}))
+      // todo: return token
+      registerGoogleUser: async (root, args) => {
+        let user = prepare(await Users.findOne({email: args.input.email}));
         if (!user) {
           const result = await Users.insert(args.input);
           return prepare(await Users.findOne({_id: result.insertedIds[0]}));
         }
-        else {
-          return user;
+        throw new ValidationError([{ key: 'email', message: 'Can\'t found user.' }]);
+      },
+      updateUser: async (root, args) => {
+        let user = prepare(await Users.findOne(ObjectId(args.input._id)));
+        if (!user) {
+          throw new ValidationError([{ key: '_id', message: 'Can\'t found user.' }]);
         }
+        let {email, _id, ...userProps} = args.input;
+
+        await Users.update({email: args.input.email}, {
+          $set: userProps
+        });
+
+        return prepare(await Users.findOne({email: args.input.email}));
       },
       registerUser: async (root, args) => {
 
