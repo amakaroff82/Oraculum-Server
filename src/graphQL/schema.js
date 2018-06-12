@@ -47,7 +47,7 @@ const typeDefs = [`
   type Query {
     user(_id: String): User
     getUserByGoogleId(data: String): User
-    page(_id: String): Page
+    page(data: String): Page
     pageByUrl(data: String): Page
     pages(data: [String]): [Page]
     getMyPages(data: String): [Page]

@@ -36,8 +36,8 @@ module.exports = {
             parsedContent: parsedContent,
           }
         });
-        setTimeout(module.exports.process, module.exports.timeout);
       }
+      setTimeout(module.exports.process, module.exports.timeout);
     }
   }
 };

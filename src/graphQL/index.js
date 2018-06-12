@@ -29,8 +29,8 @@ export function startGraphQL(app, db) {
       getUserByGoogleId: async (root, {data}) => {
         return prepare(await Users.findOne({googleId: data}));
       },
-      page: async (root, {_id}) => {
-        return prepare(await Pages.findOne(ObjectId(_id)));
+      page: async (root, {data}) => {
+        return prepare(await Pages.findOne(ObjectId(data)));
       },
       pages: async (root, {data}) => {
         return (await Pages.find({
