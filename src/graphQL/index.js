@@ -118,7 +118,7 @@ export function startGraphQL(app, db) {
           errors.push({ key: 'password', message: 'The password must be at a minimum 6 characters long.' });
         }
 
-        let user = prepare(await Users.findOne({email: args.input.email}));
+        let user = prepare(await Users.findOne({email: args.input.email, googleId: { $exists: false }}));
         if (user) {
           errors.push({ key: 'email', message: 'A user with this email address already exists.' });
         }
