@@ -155,7 +155,7 @@ export function startGraphQL(app, db) {
 
         if (errors.length) throw new ValidationError(errors);
 
-        let user = prepare(await Users.findOne({email: args.input.email}));
+        let user = prepare(await Users.findOne({email: args.input.email, googleId: { $exists: false }}));
         if (!user) {
           errors.push({ key: 'email', message: 'A user with this email address is absent.' });
           throw new ValidationError(errors);
