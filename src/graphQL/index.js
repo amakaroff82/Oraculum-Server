@@ -6,7 +6,7 @@ import {graphiqlExpress, graphqlExpress} from 'graphql-server-express/dist/index
 import {typeDefs} from './schema';
 import {makeExecutableSchema} from 'graphql-tools/dist/index';
 import config from '../config';
-import {generateToken, isPasswordValid, saltHashPassword} from '../auth-utils';
+import {generateToken, isPasswordValid, saltHashPassword, getUserIdByToken} from '../auth-utils';
 import ValidationError from './validation-error';
 
 const prepare = (o) => {
@@ -25,6 +25,13 @@ export function startGraphQL(app, db) {
     Query: {
       user: async (root, {_id}) => {
         return prepare(await Users.findOne(ObjectId(_id)));
+      },
+      userByToken: async (root, {data}) => {
+        const userId = getUserIdByToken(data);
+        if (!userId) {
+          throw new ValidationError([{ key: 'token', message: 'Invalid token.' }]);
+        }
+        return prepare(await Users.findOne(ObjectId(userId)));
       },
       getUserByGoogleId: async (root, {data}) => {
         return prepare(await Users.findOne({googleId: data}));

@@ -52,6 +52,11 @@ export function generateToken(userId) {
   return token;
 }
 
+export function getUserIdByToken(token) {
+  const decoded = jwt.verify(token, SECRET);
+  return decoded.id;
+}
+
 
 
 
