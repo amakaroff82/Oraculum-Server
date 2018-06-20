@@ -54,6 +54,7 @@ const typeDefs = [`
     getMyPages(data: String): [Page]
     getAllPages: [Page]
     comment(_id: String): Comment
+    tags: [Tag]
   }
   
   type User {
@@ -97,6 +98,12 @@ const typeDefs = [`
     _id: String
     token: String
     user: User
+  }
+  
+  type Tag {
+    _id: String
+    text: String
+    count: Int
   }
 
   type Mutation {

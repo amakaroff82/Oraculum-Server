@@ -20,6 +20,7 @@ export function startGraphQL(app, db) {
   const Users = db.collection('users');
   const Pages = db.collection('pages');
   const Comments = db.collection('comments');
+  const Tags = db.collection('tags');
 
   const resolvers = {
     Query: {
@@ -61,7 +62,10 @@ export function startGraphQL(app, db) {
       },
       getAllPages: async (root, {data}) => {
         return (await Pages.find().toArray()).map(prepare);
-      }
+      },
+      tags: async (root) => {
+        return (await Tags.find().toArray()).map(prepare);
+      },
     },
     Page: {
       comments: async ({_id}) => {
