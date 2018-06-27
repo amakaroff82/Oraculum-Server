@@ -104,6 +104,8 @@ const typeDefs = [`
     _id: String
     text: String
     count: Int
+    pagesIds: [String]
+    pages: [Page]
   }
 
   type Mutation {
