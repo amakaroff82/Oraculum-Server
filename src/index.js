@@ -1,21 +1,19 @@
-import 'babel-core/register'
-import 'babel-polyfill'
-import {start} from './graphQLMongo'
-import {startSockets} from './wsserver'
+import 'babel-core/register';
+import 'babel-polyfill';
+import {start} from './graphQLMongo';
 import cors from "cors";
 import express from "express";
-import dbJobber from './db-jobber/index';
+import contentJobber from './db-jobbers/content-jobber';
 
 const app = express();
 
-if(process.env.NODE_ENV === 'development' ){
+if(process.env.NODE_ENV === 'development') {
   // FOR DEVELOPMENT ONLY!
-  console.log("\x1b[31m", "Warning: Development mode - CORS disabled!")
+  console.log("\x1b[31m", "Warning: Development mode - CORS disabled!");
   console.log("\x1b[0m");
 
   app.use(cors());
 }
 
 start(app);
-dbJobber.start();
-//startSockets();
+contentJobber.start();

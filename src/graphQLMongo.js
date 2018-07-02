@@ -1,7 +1,7 @@
 import {MongoClient, ObjectId} from 'mongodb';
 import {startGraphQL} from './graphQL';
 import config from './config';
-//import {startSockets} from './wsserver'
+import {initPageTags} from './utils/db-utils';
 
 export const start = (app) => {
   try {
@@ -12,6 +12,7 @@ export const start = (app) => {
       }
 
       startGraphQL(app, db);
+      initPageTags(db);
     });
   } catch (e) {
     console.log('Error: ', e);

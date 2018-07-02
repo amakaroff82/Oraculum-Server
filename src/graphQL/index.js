@@ -6,45 +6,40 @@ import {graphiqlExpress, graphqlExpress} from 'graphql-server-express/dist/index
 import {typeDefs} from './schema';
 import {makeExecutableSchema} from 'graphql-tools/dist/index';
 import config from '../config';
-import {generateToken, isPasswordValid, saltHashPassword, getUserIdByToken} from '../auth-utils';
+import {generateToken, isPasswordValid, saltHashPassword, getUserIdByToken} from '../utils/auth-utils';
 import ValidationError from './validation-error';
-
-const prepare = (o) => {
-  if (o && o._id && typeof(o._id) === 'number') {
-    o._id = o._id.toString();
-  }
-  return o;
-}
+import {prepareDbObject, updateTags} from '../utils/db-utils';
 
 export function startGraphQL(app, db) {
   const Users = db.collection('users');
   const Pages = db.collection('pages');
   const Comments = db.collection('comments');
+  const Tags = db.collection('tags');
 
   const resolvers = {
     Query: {
       user: async (root, {_id}) => {
-        return prepare(await Users.findOne(ObjectId(_id)));
+        return prepareDbObject(await Users.findOne(ObjectId(_id)));
       },
       userByToken: async (root, {data}) => {
         const userId = getUserIdByToken(data);
         if (!userId) {
           throw new ValidationError([{ key: 'token', message: 'Invalid token.' }]);
         }
-        return prepare(await Users.findOne(ObjectId(userId)));
+        return prepareDbObject(await Users.findOne(ObjectId(userId)));
       },
       getUserByGoogleId: async (root, {data}) => {
-        return prepare(await Users.findOne({googleId: data}));
+        return prepareDbObject(await Users.findOne({googleId: data}));
       },
       page: async (root, {data}) => {
-        return prepare(await Pages.findOne(ObjectId(data)));
+        return prepareDbObject(await Pages.findOne(ObjectId(data)));
       },
       pages: async (root, {data}) => {
         return (await Pages.find({
           url: {
             $in: data
           }
-        }).toArray()).map(prepare);
+        }).toArray()).map(prepareDbObject);
       },
       pageByUrl: async (root, {data}) => {
         return (await Pages.findOne({
@@ -52,50 +47,64 @@ export function startGraphQL(app, db) {
         }));
       },
       comment: async (root, {_id}) => {
-        return prepare(await Comments.findOne(ObjectId(_id)));
+        return prepareDbObject(await Comments.findOne(ObjectId(_id)));
       },
       getMyPages: async (root, {data}) => {
         return (await Pages.find({
           authorId: data
-        }).toArray()).map(prepare);
+        }).toArray()).map(prepareDbObject);
       },
       getAllPages: async (root, {data}) => {
-        return (await Pages.find().toArray()).map(prepare);
-      }
+        return (await Pages.find().toArray()).map(prepareDbObject);
+      },
+      tags: async (root) => {
+        return (await Tags.find().toArray()).map(prepareDbObject);
+      },
     },
     Page: {
       comments: async ({_id}) => {
         let result = (await Comments.find({
           pageId: _id.toString()
-        }).toArray()).map(prepare);
+        }).toArray()).map(prepareDbObject);
 
         console.log(result);
         return result;
       },
       author: async ({authorId}) => {
-        return prepare(await Users.findOne(ObjectId(authorId)));
+        return prepareDbObject(await Users.findOne(ObjectId(authorId)));
       }
     },
     Comment: {
       page: async ({pageId}) => {
-        return prepare(await Pages.findOne(ObjectId(pageId)));
+        return prepareDbObject(await Pages.findOne(ObjectId(pageId)));
       },
       author: async ({authorId}) => {
-        return prepare(await Users.findOne(ObjectId(authorId)));
+        return prepareDbObject(await Users.findOne(ObjectId(authorId)));
+      }
+    },
+    Tag: {
+      pages: async ({pagesIds}) => {
+        const ids = pagesIds.map(id => ObjectId(id));
+        return await Pages.find({
+          _id: {$in: ids }
+        }).toArray().map(prepareDbObject);
+      },
+      count: ({pagesIds}) => {
+        return pagesIds.length;
       }
     },
     Mutation: {
       // todo: return token
       registerGoogleUser: async (root, args) => {
-        let user = prepare(await Users.findOne({email: args.input.email}));
+        let user = prepareDbObject(await Users.findOne({email: args.input.email}));
         if (!user) {
           const result = await Users.insert(args.input);
-          return prepare(await Users.findOne({_id: result.insertedIds[0]}));
+          return prepareDbObject(await Users.findOne({_id: result.insertedIds[0]}));
         }
         throw new ValidationError([{ key: 'email', message: 'Can\'t found user.' }]);
       },
       updateUser: async (root, args) => {
-        let user = prepare(await Users.findOne(ObjectId(args.input._id)));
+        let user = prepareDbObject(await Users.findOne(ObjectId(args.input._id)));
         if (!user) {
           throw new ValidationError([{ key: '_id', message: 'Can\'t found user.' }]);
         }
@@ -105,7 +114,7 @@ export function startGraphQL(app, db) {
           $set: userProps
         });
 
-        return prepare(await Users.findOne({email: args.input.email}));
+        return prepareDbObject(await Users.findOne({email: args.input.email}));
       },
       registerUser: async (root, args) => {
 
@@ -125,7 +134,7 @@ export function startGraphQL(app, db) {
           errors.push({ key: 'password', message: 'The password must be at a minimum 6 characters long.' });
         }
 
-        let user = prepare(await Users.findOne({email: args.input.email, googleId: { $exists: false }}));
+        let user = prepareDbObject(await Users.findOne({email: args.input.email, googleId: { $exists: false }}));
         if (user) {
           errors.push({ key: 'email', message: 'A user with this email address already exists.' });
         }
@@ -141,7 +150,7 @@ export function startGraphQL(app, db) {
           passwordHash: passwordHash
         });
         const token = generateToken(result.insertedIds[0]);
-        const newUser = prepare(await Users.findOne({_id: result.insertedIds[0]}));
+        const newUser = prepareDbObject(await Users.findOne({_id: result.insertedIds[0]}));
 
         return {
           token: token,
@@ -162,7 +171,7 @@ export function startGraphQL(app, db) {
 
         if (errors.length) throw new ValidationError(errors);
 
-        let user = prepare(await Users.findOne({email: args.input.email, googleId: { $exists: false }}));
+        let user = prepareDbObject(await Users.findOne({email: args.input.email, googleId: { $exists: false }}));
         if (!user) {
           errors.push({ key: 'email', message: 'A user with this email address is absent.' });
           throw new ValidationError(errors);
@@ -181,27 +190,29 @@ export function startGraphQL(app, db) {
         };
       },
       createOrUpdatePage: async (root, args, context, info) => {
-        let page = prepare(await Pages.findOne({url: args.input.url}))
+        let page = prepareDbObject(await Pages.findOne({url: args.input.url}))
         if (!page) {
           const result = await Pages.insert(args.input);
-          return prepare(await Pages.findOne({_id: result.insertedIds[0]}));
+          const newPage = await prepareDbObject(await Pages.findOne({_id: result.insertedIds[0]}));
+          await updateTags([], newPage.tags, newPage._id, db);
+          return newPage ;
         }
         else {
-          let {url, authorId, ...pageProps} = args.input;
-
+          const {url, authorId, ...pageProps} = args.input;
           await Pages.update({url: page.url}, {
             $set: pageProps
           });
-
-          return prepare(await Pages.findOne({url: args.input.url}));
+          const updatedPage = prepareDbObject(await Pages.findOne({url: args.input.url}));
+          await updateTags(page.tags, updatedPage.tags, updatedPage._id, db);
+          return updatedPage;
         }
       },
       createComment: async (root, args) => {
         const result = await Comments.insert(args.input);
-        return prepare(await Comments.findOne({_id: result.insertedIds[0]}));
+        return prepareDbObject(await Comments.findOne({_id: result.insertedIds[0]}));
       }
     },
-  }
+  };
 
   const schema = makeExecutableSchema({
     typeDefs,
