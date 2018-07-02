@@ -19,7 +19,7 @@ export async function updateTags(oldTags, newTags, pageId, db) {
   newTags = _.difference(newTags, commonTags);
   const allTags = _.union(oldTags, newTags);
 
-  let tags = await Tags.find({ text: { $in: allTags } });
+  let tags = await Tags.find({ text: { $in: allTags } }).toArray();
 
   _.each(oldTags, (oldTag) => {
     const tag =_.find(tags, { text: oldTag});

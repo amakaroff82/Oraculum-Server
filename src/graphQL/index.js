@@ -194,7 +194,7 @@ export function startGraphQL(app, db) {
         if (!page) {
           const result = await Pages.insert(args.input);
           const newPage = await prepareDbObject(await Pages.findOne({_id: result.insertedIds[0]}));
-          await updateTags([], newPage .tags, newPage ._id, db);
+          await updateTags([], newPage.tags, newPage._id, db);
           return newPage ;
         }
         else {
