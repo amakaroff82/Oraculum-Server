@@ -2,11 +2,11 @@ const env = process.env.NODE_ENV;
 
 const development = {
   app: {
-    port: 8080,
-    url: 'http://localhost'
+    port: 7070,
+    url: 'http://127.0.0.1'
   },
   db: {
-    mongoUrl: 'mongodb://oraculum:oraculum@ds231549.mlab.com:31549/oraculum'
+    mongoUrl: 'mongodb://localhost:27017/oraculum'
   },
   webParser: {
     mercuryApiKey: 'l9LlnJvWfcSa22lNPUk0Deq1IbBwvBOqu4wujJBT'
@@ -15,11 +15,11 @@ const development = {
 
 const production = {
   app: {
-    port: 8080,
-    url: 'https://oraculum-dev.tk'
+    port: 7070,
+    url: 'http://127.0.0.1'
   },
   db: {
-    mongoUrl: 'mongodb://oraculum:oraculum@ds231549.mlab.com:31549/oraculum'
+    mongoUrl: 'mongodb://localhost:27017/oraculum'
   },
   webParser: {
     mercuryApiKey: 'l9LlnJvWfcSa22lNPUk0Deq1IbBwvBOqu4wujJBT'
