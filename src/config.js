@@ -2,7 +2,7 @@ const env = process.env.NODE_ENV;
 
 const development = {
   app: {
-    port: 7070,
+    port: 80,
     url: 'http://127.0.0.1'
   },
   db: {
@@ -15,7 +15,7 @@ const development = {
 
 const production = {
   app: {
-    port: 7070,
+    port: 80,
     url: 'http://127.0.0.1'
   },
   db: {
